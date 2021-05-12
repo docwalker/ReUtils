@@ -1,0 +1,35 @@
+#!/usr/local/bin/python3
+
+import sys
+import subprocess
+from pathlib import Path
+
+git_cmd = subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE, text=True)
+project_dir = Path(git_cmd.communicate()[0].strip())
+
+branch_tickets = project_dir / ".git" / ".gittickets"
+
+# create the branch to ticket file file
+if not branch_tickets.exists():
+  with branch_tickets.open(mode='w+') as f:
+    nonce = 1
+
+git_cmd = subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"], stdout=subprocess.PIPE, text=True)
+branch_name = git_cmd.communicate()[0].strip()
+
+with branch_tickets.open(mode="r+") as f:
+  for line in f:
+    try:
+      branch, ticket = line.split('=')
+    except ValueError as e:
+       continue
+    
+    if branch == branch_name:
+      sys.exit(0)
+
+  print("No branch-ticket mapping found.  Please enter the corresponding Jira Ticket (Ex. TIKT-####) for this branch: ")
+  with open("/dev/tty", "r") as stdhack:
+    newTicket=stdhack.readline().strip()
+    f.write("{0}={1}\n".format(branch_name,newTicket))
+ 
+sys.exit(0)

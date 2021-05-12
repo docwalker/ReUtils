@@ -1,0 +1,34 @@
+#!/usr/local/bin/python3
+
+import sys
+import subprocess
+from pathlib import Path
+
+commit_file = sys.argv[1]
+with open(commit_file, "r") as cf:
+  commit_message = cf.read()
+
+git_cmd = subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE, text=True)
+project_dir = Path(git_cmd.communicate()[0].strip())
+
+branch_tickets = project_dir / ".git" / ".gittickets"
+
+git_cmd = subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"], stdout=subprocess.PIPE, text=True)
+branch_name = git_cmd.communicate()[0].strip()
+
+branch = ""
+ticket = ""
+
+with branch_tickets.open(mode="r") as f:
+  for line in f:
+    try:
+      branch, ticket = line.split('=')
+    except ValueError as e:
+       continue
+    
+    if branch == branch_name:
+    	break
+commit_message = ticket + " " + commit_message
+with open(commit_file, "w+") as cf:
+   cf.write(commit_message)
+      
